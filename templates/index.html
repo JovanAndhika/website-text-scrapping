@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Review Analysis</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 text-gray-900">
+    <div class="max-w-6xl mx-auto p-6">
+      <h1 class="text-3xl font-bold mb-6 text-purple-700">
+        📊 Review & Sentiment Analysis
+      </h1>
+
+      <!-- 🔎 Form input -->
+      <form method="POST" class="mb-8">
+        <div class="flex gap-2">
+          <input
+            type="text"
+            name="product"
+            placeholder="Masukkan nama produk atau tempat..."
+            class="flex-1 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500"
+            required
+          />
+          <button
+            type="submit"
+            class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+          >
+            Cari
+          </button>
+        </div>
+      </form>
+
+      {% if place_id %}
+      <!-- ✅ Ringkasan Sentimen -->
+      <div class="grid grid-cols-3 gap-4 mb-6">
+        <div class="p-4 bg-green-100 rounded-lg shadow">
+          <p class="text-lg font-semibold text-green-700">Positive</p>
+          <p class="text-2xl font-bold">{{ sentiment_summary["positive"] }}</p>
+        </div>
+        <div class="p-4 bg-red-100 rounded-lg shadow">
+          <p class="text-lg font-semibold text-red-700">Negative</p>
+          <p class="text-2xl font-bold">{{ sentiment_summary["negative"] }}</p>
+        </div>
+        <div class="p-4 bg-gray-100 rounded-lg shadow">
+          <p class="text-lg font-semibold text-gray-700">Neutral</p>
+          <p class="text-2xl font-bold">{{ sentiment_summary["neutral"] }}</p>
+        </div>
+      </div>
+
+      <!-- ✅ Wordcloud -->
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-3 text-purple-700">🌥 Wordcloud</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {% if wordclouds["all"] %}
+          <div>
+            <h3 class="text-md font-semibold mb-2">Semua Review</h3>
+            <img
+              src="{{ wordclouds['all'] }}"
+              alt="Wordcloud Semua"
+              class="rounded-lg shadow"
+            />
+          </div>
+          {% endif %}
+          {% if wordclouds["positive"] %}
+          <div>
+            <h3 class="text-md font-semibold mb-2 text-green-600">Positive</h3>
+            <img
+              src="{{ wordclouds['positive'] }}"
+              alt="Wordcloud Positive"
+              class="rounded-lg shadow"
+            />
+          </div>
+          {% endif %}
+          {% if wordclouds["negative"] %}
+          <div>
+            <h3 class="text-md font-semibold mb-2 text-red-600">Negative</h3>
+            <img
+              src="{{ wordclouds['negative'] }}"
+              alt="Wordcloud Negative"
+              class="rounded-lg shadow"
+            />
+          </div>
+          {% endif %}
+          {% if wordclouds["neutral"] %}
+          <div>
+            <h3 class="text-md font-semibold mb-2 text-gray-600">Neutral</h3>
+            <img
+              src="{{ wordclouds['neutral'] }}"
+              alt="Wordcloud Neutral"
+              class="rounded-lg shadow"
+            />
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- ✅ Aspek Analisis -->
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold mb-4 text-purple-700">
+          🔍 Aspek Analisis
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {% for sentiment, aspects in aspect_result.items() %}
+          <div class="p-4 bg-white rounded-lg shadow">
+            <h3 class="text-xl font-semibold mb-3 capitalize text-purple-600">
+              {{ sentiment }}
+            </h3>
+
+            <h4 class="text-md font-semibold text-gray-700">Frequent Nouns</h4>
+            <ul class="list-disc list-inside mb-3 text-sm">
+              {% for noun, freq in aspects["nouns"] %}
+              <li>{{ noun }} ({{ freq }})</li>
+              {% else %}
+              <li class="text-gray-400">Tidak ada data</li>
+              {% endfor %}
+            </ul>
+
+            <h4 class="text-md font-semibold text-gray-700">
+              Frequent Noun Phrases
+            </h4>
+            <ul class="list-disc list-inside text-sm">
+              {% for phrase, freq in aspects["phrases"] %}
+              <li>{{ phrase }} ({{ freq }})</li>
+              {% else %}
+              <li class="text-gray-400">Tidak ada data</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- ✅ Daftar Review -->
+      <div>
+        <h2 class="text-2xl font-bold mb-3 text-purple-700">
+          📋 Daftar Review
+        </h2>
+        <div class="space-y-4">
+          {% for r in reviews %}
+          <div class="p-4 bg-white rounded-lg shadow">
+            <p class="text-sm text-gray-500">👤 {{ r.user }}</p>
+            <p class="text-gray-800">{{ r.text }}</p>
+            <span
+              class="text-xs px-2 py-1 rounded {% if r.sentiment == 'positive' %} bg-green-200 text-green-800 {% elif r.sentiment == 'negative' %} bg-red-200 text-red-800 {% else %} bg-gray-200 text-gray-800 {% endif %}"
+            >
+              {{ r.sentiment }} (score: {{ r.score }})
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.5.1/dist/flowbite.min.js"></script>
+  </body>
+</html>
