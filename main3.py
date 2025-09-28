@@ -167,7 +167,7 @@ def index():
         else:
             print("place_id tetap tidak ditemukan")
 
-    return render_template("index.html",
+    return render_template("index3.html",
                            reviews=analyzed_reviews,
                            raw_json=raw_json,
                            place_id=place_id,
