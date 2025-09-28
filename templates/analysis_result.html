@@ -46,22 +46,61 @@
         </div>
     </div>
     
-    <!-- Analisis Topik Umum -->
+    <!-- Analisis Topik (Word Clouds) dalam Grid 2x2 -->
     <div class="bg-white p-6 rounded-xl shadow-lg">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">Analisis Topik Umum (Noun & Noun Phrases)</h2>
-        
-        <!-- Word Cloud -->
-        <div class="mb-8">
-            <h3 class="text-lg font-medium text-gray-600 mb-2 text-center">Visualisasi Word Cloud</h3>
-            {% if wordcloud_image %}
-                <img src="data:image/png;base64,{{ wordcloud_image }}" alt="Word Cloud dari ulasan" class="rounded-lg border mx-auto">
-            {% else %}
-                <p class="text-gray-500 text-center">Tidak cukup data untuk membuat word cloud.</p>
-            {% endif %}
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Analisis Topik (Word Clouds)</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Word Cloud Umum -->
+            <div>
+                <h3 class="text-lg font-medium text-blue-700 mb-2 text-center">Topik Keseluruhan</h3>
+                {% if wordcloud_overall %}
+                    <img src="data:image/png;base64,{{ wordcloud_overall }}" alt="Word Cloud Keseluruhan" class="rounded-lg border mx-auto">
+                {% else %}
+                    <div class="flex items-center justify-center h-48 bg-gray-50 rounded-lg border">
+                        <p class="text-gray-500">Tidak ada data.</p>
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Word Cloud Positif -->
+            <div>
+                <h3 class="text-lg font-medium text-green-700 mb-2 text-center">Topik Ulasan Positif</h3>
+                {% if wordcloud_positive %}
+                    <img src="data:image/png;base64,{{ wordcloud_positive }}" alt="Word Cloud Ulasan Positif" class="rounded-lg border mx-auto">
+                {% else %}
+                    <div class="flex items-center justify-center h-48 bg-gray-50 rounded-lg border">
+                        <p class="text-gray-500">Tidak ada data.</p>
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Word Cloud Negatif -->
+            <div>
+                <h3 class="text-lg font-medium text-red-700 mb-2 text-center">Topik Ulasan Negatif</h3>
+                {% if wordcloud_negative %}
+                    <img src="data:image/png;base64,{{ wordcloud_negative }}" alt="Word Cloud Ulasan Negatif" class="rounded-lg border mx-auto">
+                {% else %}
+                    <div class="flex items-center justify-center h-48 bg-gray-50 rounded-lg border">
+                        <p class="text-gray-500">Tidak ada data.</p>
+                    </div>
+                {% endif %}
+            </div>
+            <!-- Word Cloud Netral -->
+            <div>
+                <h3 class="text-lg font-medium text-gray-700 mb-2 text-center">Topik Ulasan Netral</h3>
+                {% if wordcloud_neutral %}
+                    <img src="data:image/png;base64,{{ wordcloud_neutral }}" alt="Word Cloud Ulasan Netral" class="rounded-lg border mx-auto">
+                {% else %}
+                    <div class="flex items-center justify-center h-48 bg-gray-50 rounded-lg border">
+                        <p class="text-gray-500">Tidak ada data.</p>
+                    </div>
+                {% endif %}
+            </div>
         </div>
-        
-        <!-- Diagram Batang dan Pie -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t pt-6">
+    </div>
+
+    <!-- Ringkasan Topik Keseluruhan (Diagram) -->
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Ringkasan Topik Keseluruhan</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div>
                 <h3 class="text-lg font-medium text-gray-600 mb-2 text-center">Top 10 Kata Benda (Nouns)</h3>
                 <canvas id="nounBarChart"></canvas>
@@ -73,9 +112,10 @@
         </div>
     </div>
 
+
     <!-- Detail Data -->
     <div class="bg-white p-6 rounded-xl shadow-lg">
-        <h2 class="text-xl font-semibold text-gray-700 mb-4">Detail Hasil Analisis per Ulasan (Sampel)</h2>
+        <h2 class="text-xl font-semibold text-gray-700 mb-4">Detail Hasil Analisis per Ulasan</h2>
         <div class="overflow-x-auto rounded-lg border">
             {{ table|safe }}
         </div>

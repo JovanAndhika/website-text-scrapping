@@ -18,7 +18,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# Memuat model spaCy untuk NLP (dijalankan sekali saat aplikasi start)
+# Memuat model spaCy untuk NLP
 try:
     nlp = spacy.load("en_core_web_sm")
     print("Model spaCy 'en_core_web_sm' berhasil dimuat.")
@@ -37,16 +37,17 @@ print("Pipeline analisis sentimen berhasil dimuat.")
 
 # --- Fungsi Helper ---
 def allowed_file(filename):
-    """Mengecek apakah ekstensi file diizinkan."""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def generate_wordcloud(text):
-    """Membuat gambar word cloud dan mengembalikannya sebagai string base64."""
+def generate_wordcloud(text, colormap='viridis'):
+    """Membuat gambar word cloud dengan colormap yang bisa disesuaikan."""
+    if not text or not text.strip():
+        return None
     wordcloud = WordCloud(
         width=800, 
         height=400, 
         background_color='white',
-        colormap='viridis',
+        colormap=colormap,
         max_words=100
     ).generate(text)
     
@@ -57,8 +58,7 @@ def generate_wordcloud(text):
     return img_b64
 
 def extract_key_phrases(text, nlp_model):
-    """Mengekstrak nouns dan noun phrases menggunakan spaCy."""
-    if not nlp_model:
+    if not nlp_model or not text or not text.strip():
         return [], []
         
     doc = nlp_model(text)
@@ -90,7 +90,6 @@ def upload_file():
         
     if file and allowed_file(file.filename):
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-        
         try:
             df = pd.read_csv(file)
             df.columns = df.columns.str.strip()
@@ -105,13 +104,10 @@ def upload_file():
     flash('Jenis file tidak diizinkan')
     return redirect(request.url)
 
-
 @app.route('/files')
 def list_files():
     files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if f.endswith('.csv')]
     return render_template('files.html', files=files)
-
-
 
 @app.route('/analyze/<filename>')
 def analyze_file(filename):
@@ -127,9 +123,7 @@ def analyze_file(filename):
         flash("File CSV tidak memiliki kolom 'Ulasan'.")
         return redirect(url_for('list_files'))
         
-    # SAMPLE DF akan menampilkan 100 ulasan teratas
-    sample_df = df.head(100).copy()
-    reviews = sample_df['Ulasan'].dropna().astype(str).tolist()
+    reviews = df['Ulasan'].dropna().astype(str).tolist()
     
     if not reviews:
         flash("Tidak ada ulasan untuk dianalisis di dalam file.")
@@ -137,11 +131,11 @@ def analyze_file(filename):
 
     # 1. Analisis Sentimen
     sentiment_results = sentiment_pipeline(reviews)
-    sample_df['Sentimen'] = [res['label'] for res in sentiment_results]
-    sample_df['Skor Sentimen'] = [round(res['score'], 4) for res in sentiment_results]
+    df['Sentimen'] = [res['label'] for res in sentiment_results]
+    df['Skor Sentimen'] = [round(res['score'], 4) for res in sentiment_results]
     
     # 2. Ringkasan Sentimen
-    sentiment_counts = sample_df['Sentimen'].value_counts()
+    sentiment_counts = df['Sentimen'].value_counts()
     summary = {
         'positive': int(sentiment_counts.get('positive', 0)),
         'negative': int(sentiment_counts.get('negative', 0)),
@@ -150,22 +144,34 @@ def analyze_file(filename):
     chart_labels = list(summary.keys())
     chart_data = list(summary.values())
 
-    # 3. Ekstraksi Frasa & Word Cloud
-    all_reviews_text = " ".join(reviews)
-    nouns, noun_phrases = extract_key_phrases(all_reviews_text, nlp)
+    # 3. Ekstraksi Frasa & Word Cloud per Sentimen
+    positive_reviews_text = " ".join(df[df['Sentimen'] == 'positive']['Ulasan'].dropna().astype(str).tolist())
+    negative_reviews_text = " ".join(df[df['Sentimen'] == 'negative']['Ulasan'].dropna().astype(str).tolist())
+    neutral_reviews_text = " ".join(df[df['Sentimen'] == 'neutral']['Ulasan'].dropna().astype(str).tolist())
     
-    # Hitung frekuensi INI UNTUK MENGATUR BANYAKNYA NOUNS YANG INGIN DITAMPILKAN
-    top_nouns = Counter(nouns).most_common(10)
-    top_noun_phrases = Counter(noun_phrases).most_common(10)
+    pos_nouns, pos_phrases = extract_key_phrases(positive_reviews_text, nlp)
+    neg_nouns, neg_phrases = extract_key_phrases(negative_reviews_text, nlp)
+    neu_nouns, neu_phrases = extract_key_phrases(neutral_reviews_text, nlp)
     
-    # Persiapkan data untuk diagram baru
+    wc_positive = generate_wordcloud(" ".join(pos_nouns + pos_phrases), colormap='Greens')
+    wc_negative = generate_wordcloud(" ".join(neg_nouns + neg_phrases), colormap='Reds')
+    wc_neutral = generate_wordcloud(" ".join(neu_nouns + neu_phrases), colormap='Greys')
+
+    # 4. Data untuk Diagram & Word Cloud Keseluruhan
+    all_nouns = pos_nouns + neg_nouns + neu_nouns
+    all_noun_phrases = pos_phrases + neg_phrases + neu_phrases
+    
+    # Menambahkan kembali word cloud umum
+    wordcloud_text_overall = " ".join(all_nouns + all_noun_phrases)
+    wc_overall = generate_wordcloud(wordcloud_text_overall, colormap='viridis')
+    
+    top_nouns = Counter(all_nouns).most_common(10)
+    top_noun_phrases = Counter(all_noun_phrases).most_common(10)
+    
     noun_labels, noun_data = zip(*top_nouns) if top_nouns else ([], [])
     phrase_labels, phrase_data = zip(*top_noun_phrases) if top_noun_phrases else ([], [])
     
-    wordcloud_text = " ".join(nouns + noun_phrases)
-    wordcloud_image = generate_wordcloud(wordcloud_text) if wordcloud_text else None
-    
-    table_html = sample_df.to_html(classes='min-w-full divide-y divide-gray-200', border=0, index=False)
+    table_html = df.to_html(classes='min-w-full divide-y divide-gray-200', border=0, index=False)
     
     return render_template(
         'analysis_result.html',
@@ -174,8 +180,12 @@ def analyze_file(filename):
         chart_labels=chart_labels,
         chart_data=chart_data,
         table=table_html,
-        wordcloud_image=wordcloud_image,
-        # Data baru untuk diagram batang dan pie
+        # Word clouds
+        wordcloud_overall=wc_overall,
+        wordcloud_positive=wc_positive,
+        wordcloud_negative=wc_negative,
+        wordcloud_neutral=wc_neutral,
+        # Data untuk diagram
         noun_labels=list(noun_labels),
         noun_data=list(noun_data),
         phrase_labels=list(phrase_labels),
