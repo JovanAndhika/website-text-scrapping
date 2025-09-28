@@ -1,49 +1,50 @@
 {% extends "layout.html" %}
 
-{% block title %}File CSV Tersimpan{% endblock %}
+{% block title %}File Tersimpan{% endblock %}
 
 {% block content %}
-<div class="bg-white p-8 rounded-xl shadow-lg">
-    <div class="mb-6 border-b pb-4">
-        <h1 class="text-2xl font-bold text-gray-800">Daftar File CSV Tersimpan</h1>
-        <p class="text-gray-500 mt-1">Pilih file untuk dianalisis sentimennya.</p>
+<div class="bg-white p-6 rounded-xl shadow-lg">
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-2xl font-bold text-gray-800">File CSV Tersimpan</h1>
     </div>
     
-    <!-- Menampilkan notifikasi error/flash message -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">
-            <strong class="font-bold">Error!</strong>
-            <span class="block sm:inline">{{ message }}</span>
-          </div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <div class="space-y-4">
-        {% if files %}
-            {% for file in files %}
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between hover:shadow-md transition-shadow duration-200">
-                <div class="flex items-center space-x-4">
-                    <i class="fas fa-file-csv fa-2x text-indigo-500"></i>
-                    <p class="text-md font-semibold text-gray-700 break-all">{{ file }}</p>
-                </div>
-                <!-- Tombol Analisa Sentimen -->
-                <a href="{{ url_for('analyze_sentiment', filename=file) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors">
-                    <i class="fas fa-chart-pie mr-2"></i>
-                    Analisa Sentimen
-                </a>
-            </div>
-            {% endfor %}
-        {% else %}
-            <div class="col-span-full bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-                <i class="fas fa-info-circle fa-2x text-yellow-500 mb-2"></i>
-                <p class="text-md font-medium text-yellow-800">Belum ada file CSV yang diunggah.</p>
-                <p class="text-sm text-yellow-600">Silakan unggah file melalui halaman "Unggah File".</p>
-            </div>
-        {% endif %}
+    {% if files %}
+    <div class="overflow-x-auto rounded-lg border">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Nama File
+                    </th>
+                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Aksi
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for file in files %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ file }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <!-- PERBAIKAN DI SINI: Mengubah 'analyze_sentiment' menjadi 'analyze_file' -->
+                        <a href="{{ url_for('analyze_file', filename=file) }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 transition-colors">
+                           <i class="fas fa-chart-bar mr-2"></i>
+                           Analisa Sentimen
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    {% else %}
+        <div class="text-center py-10 px-6 bg-gray-50 rounded-lg">
+            <p class="text-gray-500">Belum ada file yang di-upload.</p>
+            <a href="{{ url_for('index') }}" class="mt-4 inline-block px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700">Upload File Sekarang</a>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}
 
