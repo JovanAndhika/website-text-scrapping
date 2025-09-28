@@ -1,0 +1,7 @@
+flask
+pandas
+transformers
+torch
+spacy
+wordcloud
+matplotlib
