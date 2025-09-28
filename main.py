@@ -127,6 +127,7 @@ def analyze_file(filename):
         flash("File CSV tidak memiliki kolom 'Ulasan'.")
         return redirect(url_for('list_files'))
         
+    # SAMPLE DF akan menampilkan 100 ulasan teratas
     sample_df = df.head(100).copy()
     reviews = sample_df['Ulasan'].dropna().astype(str).tolist()
     
@@ -153,7 +154,7 @@ def analyze_file(filename):
     all_reviews_text = " ".join(reviews)
     nouns, noun_phrases = extract_key_phrases(all_reviews_text, nlp)
     
-    # Hitung frekuensi
+    # Hitung frekuensi INI UNTUK MENGATUR BANYAKNYA NOUNS YANG INGIN DITAMPILKAN
     top_nouns = Counter(nouns).most_common(10)
     top_noun_phrases = Counter(noun_phrases).most_common(10)
     
