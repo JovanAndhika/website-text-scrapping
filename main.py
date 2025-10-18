@@ -1,4 +1,5 @@
 import os
+from dotenv import load_dotenv
 import pandas as pd
 from flask import Flask, render_template, request, redirect, url_for, flash
 import spacy
@@ -9,9 +10,10 @@ from collections import Counter
 
 # --- Inisialisasi Aplikasi dan Model ---
 app = Flask(__name__)
-app.secret_key = 'kunci_rahasia_anda'
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'csv'}
+load_dotenv()
+my_hf_token = os.getenv("HF_TOKEN")
 
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -28,19 +30,22 @@ except OSError:
     nlp = None
 
 # Memuat pipeline Hugging Face untuk analisis sentimen
-from transformers import pipeline
-sentiment_pipeline = pipeline(
-    "sentiment-analysis",
-    model="lxyuan/distilbert-base-multilingual-cased-sentiments-student"
-)
+from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
+
+
+#  Load DistilBERT sentiment model sekali di awal
+MODEL_NAME = "lxyuan/distilbert-base-multilingual-cased-sentiments-student"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=my_hf_token)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_NAME, token=my_hf_token)
+sentiment_pipeline = pipeline("sentiment-analysis", model=model, tokenizer=tokenizer)
 print("Pipeline analisis sentimen berhasil dimuat.")
 
-# --- Fungsi Helper ---
+# --- Fungsi mendeteksi extension ---
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def generate_wordcloud(text, colormap='viridis'):
-    """Membuat gambar word cloud dengan colormap yang bisa disesuaikan."""
+    # Membuat gambar word cloud dengan colormap yang bisa disesuaikan
     if not text or not text.strip():
         return None
     wordcloud = WordCloud(
@@ -81,12 +86,14 @@ def index():
 def upload_file():
     if 'file' not in request.files:
         flash('Tidak ada bagian file')
-        return redirect(request.url)
+        # Arahkan ke halaman index
+        return redirect(url_for('index'))
     
     file = request.files['file']
     if file.filename == '':
         flash('Tidak ada file yang dipilih')
-        return redirect(request.url)
+        # Arahkan ke halaman index
+        return redirect(url_for('index'))
         
     if file and allowed_file(file.filename):
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
@@ -99,10 +106,10 @@ def upload_file():
             return render_template('result.html', filename=file.filename, table=table_html)
         except Exception as e:
             flash(f"Terjadi error saat memproses file: {e}")
-            return redirect(request.url)
+            return redirect(url_for('index'))
             
     flash('Jenis file tidak diizinkan')
-    return redirect(request.url)
+    return redirect(url_for('index'))
 
 @app.route('/files')
 def list_files():
@@ -122,14 +129,15 @@ def analyze_file(filename):
     if 'Ulasan' not in df.columns:
         flash("File CSV tidak memiliki kolom 'Ulasan'.")
         return redirect(url_for('list_files'))
-        
+     
+    # Menyimpan value kolom 'Ulasan' ke variabel reviews untuk cek sentimen nya  
     reviews = df['Ulasan'].dropna().astype(str).tolist()
     
     if not reviews:
         flash("Tidak ada ulasan untuk dianalisis di dalam file.")
         return redirect(url_for('list_files'))
 
-    # 1. Analisis Sentimen
+    # 1. Analisis Sentimen dari kolom 'Ulasan'
     sentiment_results = sentiment_pipeline(reviews)
     df['Sentimen'] = [res['label'] for res in sentiment_results]
     df['Skor Sentimen'] = [round(res['score'], 4) for res in sentiment_results]
